@@ -1,16 +1,16 @@
 import os
 import secrets
 from PIL import Image
-from flask import url_for
+from flask import url_for, current_app
 from flask_mail import Message
-from flaskblog import app, mail
+from flaskblog import mail
 
 def save_picture(form_picture):
     #Generate a random_hex with 8 bytes to append to the beginning of the extension.
     random_hex = secrets.token_hex(8)
     _, f_ext = os.path.splitext(form_picture.filename)
     picture_fn = random_hex + f_ext
-    picture_path = os.path.join(app.root_path, 'static/profile_pics', picture_fn) 
+    picture_path = os.path.join(current_app.root_path, 'static/profile_pics', picture_fn) 
     
 
     output_size = (250, 250)
