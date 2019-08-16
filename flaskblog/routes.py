@@ -1,10 +1,13 @@
 import secrets, os
 from PIL import Image
 from flask import render_template, url_for, flash, redirect, request, abort
-from flaskblog import app, db, bcrypt
-from flaskblog.forms import RegistrationForm, LoginForm, UpdateAccountForm, PostForm
+from flaskblog import app, db, bcrypt, mail
+from flaskblog.forms import (RegistrationForm, LoginForm, UpdateAccountForm, 
+                            PostForm, RequestResetForm, ResetPasswordForm)
 from flaskblog.models import User, Post
 from flask_login import login_user, current_user, logout_user, login_required
+from flask_mail import Message
+
 
 @app.route('/')
 @app.route('/home')
@@ -147,6 +150,10 @@ def update_post(post_id):
 @app.route('/post/<int:post_id>/delete', methods = ['POST'])
 @login_required
 def delete_post(post_id):
+
+    #Throw a 403 Forbidden message if the user is trying to delete a post that is not theirs.
+    #The program is coded so that the delete button is not even shown, but this is to prevent deletion
+    #... from directly accessing the URL.
     post = Post.query.get_or_404(post_id)
     if post.author != current_user:
         abort(403)
@@ -160,8 +167,73 @@ def delete_post(post_id):
 @app.route('/user/<string:username>')
 def user_posts(username):
     page = request.args.get('page', 1, type = int)
+
+    #Find the posts of this user, or 404 if the user does not exist.
     user = User.query.filter_by(username=username).first_or_404()
     posts = Post.query.filter_by(author = user)\
         .order_by(Post.date_posted.desc())\
         .paginate(page = page, per_page=2)
     return render_template('user_posts.html', posts=posts, user=user)
+
+
+#Non-route method to send the reset email to a user.
+#This utilizes another flask extension called flask-mail.
+def send_reset_email(user):
+    token = user.get_reset_token() #this is a method in the models.py (30 min expiry)
+    msg = Message('Password Reset Request', 
+                    sender = 'noreply@demo.com', 
+                    recipients = [user.email])
+
+
+#_ext will give the absolute link associated with the full domain, rather than just a relative url.
+    msg.body = f''' To reset your password, please visit the following link.
+{url_for('reset_token', token=token, _external = True)}
+
+If you did not make this request, then ignore this email and no changes will be made.
+'''
+    mail.send(msg)
+    
+
+
+
+@app.route("/reset_password", methods =["GET","POST"])
+def reset_request():
+    #To make sure that the user is logged out.
+    if current_user.is_authenticated:
+        return redirect(url_for('home'))
+    form = RequestResetForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        send_reset_email(user)
+        flash("An email containing instructions on how to reset your password has been sent.", 'info')
+        return redirect(url_for('login'))
+    return render_template('reset_request.html', title = 'Reset Password', form = form)
+
+
+@app.route("/reset_password/<token>", methods =["GET","POST"])
+def reset_token(token):
+    if current_user.is_authenticated:
+        return redirect(url_for('home'))
+    
+    #Pass in the token from the url, also... 
+    # the method is inherited from the static method in models.py for User
+    user = User.verify_reset_token(token)
+
+    #Check if the token is valid and if the user was verified via the token.
+    if user is None:
+        flash("That is an invalid or expired token", 'warning')
+        return redirect(url_for('reset_request'))
+
+    
+    form = ResetPasswordForm()
+    if form.validate_on_submit():
+        hashed_password = bcrypt.generate_password_hash(form.password.data).decode('utf-8')
+        #user is already in the database and given by the verify token method.
+        user.password = hashed_password
+        db.session.commit()
+        flash(f'Your password has been updated. You are now able to log in with your new password', 'success')
+        return redirect(url_for('login'))
+    return render_template('reset_token.html', title = 'Reset Password', form = form)
+
+    
+    
