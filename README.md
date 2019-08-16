@@ -4,4 +4,4 @@ A minimal application in flask that allows for account creation, post creation, 
 # Tree structure
 A tree visualization of the directories to show the changes made as a result of blueprints and configurations. Shown to give a high-level summary of the anatomy of the application.
 
-![tree_structure](https://imgur.com/a/0oRsgut)
+![tree_structure](https://i.imgur.com/AHIkylM.png)
