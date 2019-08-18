@@ -2,6 +2,14 @@
 
 An application coded using Flask, a micro-framework in Python. This site has functionalities that allow for account creation and updating, post creation, post updating and deletion, and email recovery of passwords with a back-end using SQLAlchemy, along with further security considerations.
 
+## [Visit the demo site here](https://www.demoflaskblog.com/)
+
+You can create a user account yourself or use the following test account details to try out the site.
+
+**Email:** TestUser@demo.com
+
+**Password:** testing
+
 Table of contents
 =================
 
@@ -15,15 +23,7 @@ Table of contents
 
 <!--te-->
 
-## [Visit the demo site here](https://www.demoflaskblog.com/)
-
 ![Site Image](https://i.imgur.com/65nwp4m.png)
-
-You can create a user account yourself or use the following test account details to try out the site.
-
-**Email:** TestUser@demo.com
-
-**Password:** testing
 
 
 # Tree structure
